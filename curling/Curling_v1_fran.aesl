@@ -9,7 +9,7 @@
 <constant value="1" name="turn1"/>
 <constant value="0" name="stopped"/>
 <constant value="300" name="target"/>
-<constant value="200" name="threshold"/>
+<constant value="300" name="threshold"/>
 <constant value="300" name="colour"/>
 <constant value="2" name="straight1"/>
 <constant value="3" name="turn2"/>
@@ -23,82 +23,89 @@
 
 
 <!--node thymio-II-->
-<node nodeId="1" name="thymio-II">var timer
+<node nodeId="1" name="thymio-II">var count = 1
 var state
-var count
+var timer = 0
 
 onevent button.forward
-	#state is set to first left turn
 	state = turn1
-	#robot turns to left cause state is turn1 in subroutine action
-	callsub action
-
+	callsub action 
+	
 onevent button.backward
+	state = stopped
 	motor.right.target = 0 
 	motor.left.target = 0
-		
+	count = 0
+
 onevent prox
-	
-	if  state == straight1 then
-		if prox.ground.delta[1] &lt;= threshold then
-			state = turn2
-			callsub action
-			
-		end
-	else if 
-	#if robot senses something with the ground
-	#proximity sensors other then in the first going straight phase
-	#it shall stop
-	prox.ground.delta[1] &lt;= threshold then
-			state = turn2
-			callsub action
-			
-		end
-	end
-	
+			if state!=stopped 
+			and prox.ground.delta[0] &lt;= threshold 
+			then
+				if state == straight1 then
+					count = 3
+					callsub action 
+				end
+
+					
+end
+
 sub action
-	if state == turn1 then
+	if count==1 then
+	#turn1
 		timer.period[0]=619
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
+		state=straight1
+	end	
+	while count==2 do
+	#until finds black
 		state = straight1
-	end
-	if state == straight1 then
-		timer.period[0]=8000
 		timer = 1
+		#robot goes forward
 		motor.left.target = 300
 		motor.right.target = 300
-		state = turn2
+		#if he sees black line, count is set to 3
+		if prox.ground.delta[0] &lt;= threshold then
+			count = 3
+		end
 	end
-	if state == turn2 then
+	if count==3 then
 		timer.period[0]=619
 		timer = 1
-		motor.left.target = -300
-		motor.right.target = 300
-		state = straight2
+		motor.left.target = 300
+		motor.right.target = -300
 	end
-	if state == straight2 then
+	if count==4 then
+	#straight2
 		timer.period[0]=15000
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = 300
-		state = turn3
 	end
-	if  state == turn3 then
+	if count==5 then
+	#turn3
 		timer.period[0]=800
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
-		state = wait
 	end
+	if count==6 then
+	#wait
+		timer.period[0] = 20000
+		timer = 1
+		motor.left.target = 0
+		motor.right.target = 0
+end
 
 onevent timer0
-	#when the timer is over, call the subroutine action again
-	if timer == 1 then
-	  callsub action
-end
-	</node>
+	if timer == 1 and state!=stopped then
+		count=count+1
+		motor.left.target = 0
+		motor.right.target = 0
+		timer = 0
+		callsub action
+	end</node>
 
 
 </network>
