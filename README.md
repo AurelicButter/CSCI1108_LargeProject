@@ -1,3 +1,3 @@
 # CSCI1108_LargeProject
 # 
-# YOu deadass thought there was actually a README?
+# You deadass thought there was actually a README?
