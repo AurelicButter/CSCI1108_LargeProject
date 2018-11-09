@@ -1,0 +1,109 @@
+<!DOCTYPE aesl-source>
+<network>
+
+
+<!--list of global events-->
+
+
+<!--list of constants-->
+<constant value="1" name="left"/>
+<constant value="0" name="stopped"/>
+<constant value="300" name="target"/>
+<constant value="200" name="threshold"/>
+<constant value="300" name="colour"/>
+<constant value="2" name="right"/>
+
+
+<!--show keywords state-->
+<keywords flag="true"/>
+
+
+<!--node thymio-II-->
+<node nodeId="1" name="thymio-II">var max
+var min
+var mean
+var state
+var count
+var timer
+var linefollow
+motor.left.target=0
+motor.right.target=0
+timer.period[0]=0
+count = 0
+
+
+onevent button.forward
+	timer = 0
+	count = 0
+	linefollow = 1
+	state=left
+	motor.left.target = target
+	motor.right.target = target
+	
+onevent button.backward
+	state=stopped
+	motor.left.target=0
+	motor.right.target=0
+
+onevent prox
+	if state != stopped and linefollow == 1 then 
+			if (state == left) and  (prox.ground.delta[1] &lt;= colour) then
+				state = right
+				motor.left.target = 500
+				motor.right.target = 200
+			end
+			if (state == right) and (prox.ground.delta[0] &lt;= colour) then
+				state = left 
+				motor.left.target = 200 
+				motor.right.target = 500
+			end
+	end
+	call math.stat( prox.horizontal[1:3], min, max, mean)
+	if (max>threshold) and min != 0  and state != stopped then
+			count = 1
+			callsub goAround		
+	else
+	end	
+sub goAround
+	linefollow = 0
+	if count==1 then
+		timer.period[0]=619
+		timer = 1
+		motor.left.target = 300
+		motor.right.target = -300
+	end	
+	if count==2 then
+		timer.period[0]=1000
+		timer = 1
+		motor.left.target = target
+		motor.right.target = target
+	end
+	if count==3 then
+		timer.period[0]=1000
+		timer = 1
+		motor.left.target= 10
+		motor.right.target=target
+	end
+	while count==4 do
+		motor.left.target = 200
+		motor.right.target = 350
+		linefollow = 1
+		if prox.ground.reflected[0] &lt; 300 then
+			count = 0
+			state = left
+		end
+	end
+
+	
+onevent timer0
+	if  timer == 1 and state != stopped then
+		count=count+1
+		motor.left.target = 0
+		motor.right.target = 0
+		timer = 0
+		callsub goAround
+	end
+		</node>
+
+
+</network>
