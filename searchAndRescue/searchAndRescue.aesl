@@ -11,6 +11,7 @@
 <constant value="1" name="FORWARD"/>
 <constant value="2" name="BLOCK"/>
 <constant value="3" name="TURN"/>
+<constant value="300" name="gTHRESHOLD"/>
 
 
 <!--show keywords state-->
@@ -22,6 +23,22 @@
 var firstScan[6] = [0, 0, 0, 0, 0, 0]
 var location[8] = [2, 2, 2, 2, 2, 2, 2, 2]
 var dummy
+
+#Location Key Quad
+var locations[32] = [
+	[0, 1, 0, 0],
+	[1, 0, 0, 0],
+	[0, 0, 0, 1],
+	[0, 0, 1, 1],
+	[0, 1, 1, 0],
+	[1, 1, 0, 0],
+	[1, 0, 0, 1],
+	[0, 0, 1, 0]
+]
+
+var currLoc[4] = [2, 2, 2, 2] #2 is a placeholder null value.
+var i = 0
+var foundLoc = 10 #Sets to the square order thingy.
 
 onevent button.backward
 	state = STOPPED
@@ -47,11 +64,31 @@ sub scan
 	end
 	
 sub localize
-	#Finds where it is.
+	callsub gScan
+		
+sub gScan
+	if gTHRESHOLD > prox.ground.delta[0] then
+		currLoc[i] = 1
+	else
+		currLoc[i] = 0
+	end
+	i += 1
 
 sub returnHome
 	#Turns around and goes home.
-	#Displays the location and the colour</node>
+	#Displays the location and the colour
+	
+	#Senses no wall and turns an amount of degrees
+	state = FORWARD
+	motor.left.target = SPEED
+	motor.right.speed = SPEED
+	
+	#Senses the center and stops
+	
+	callsub flashResults
+	
+sub flashResults
+#Displays results.</node>
 
 
 </network>
