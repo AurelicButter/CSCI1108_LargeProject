@@ -42,12 +42,16 @@ onevent prox
 			if state!=stopped 
 			and prox.ground.delta[0] &lt;= threshold 
 			then
+				if state != straight1 then
+					count = 8
+					callsub action 
+				end
 				if state == straight1 then
 					count = 3
 					callsub action 
-				end	
+				end
 				#if last state and robot senses black ground 
-				if state == final then
+				if state == final then 
 					count = 8
 					callsub action 
 				end								
@@ -56,7 +60,7 @@ end
 sub action
 	if count==1 then
 	#turn1
-		timer.period[0]=619
+		timer.period[0]=800
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
@@ -73,34 +77,41 @@ sub action
 		if prox.ground.delta[0] &lt;= threshold then
 			count = 3
 		end
+	#implement that it goes back for 1 second before turning
 	end
 	if count==3 then
-		timer.period[0]=619
+		state = turn1
+		timer.period[0]=800
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = -300
 	end
 	if count==4 then
+		state= straight2
 	#straight2
-		timer.period[0]=15000
+		timer.period[0]=14000
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = 300
 	end
 	if count==5 then
+		state=turn3
 	#turn3
-		timer.period[0]=800
+		timer.period[0]= 1000
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
 	end
 	if count==6 then
+		state = wait
 	#wait
 		timer.period[0] = 20000
 		timer = 1
 		motor.left.target = 0
 		motor.right.target = 0
+	
 	while count==7 do
+		state = final
 		timer.period[0] = 3000
 		timer = 1
 		motor.left.target = 400
@@ -109,6 +120,7 @@ sub action
 			count = 8
 		end
 	end
+	
 	if count == 8 then
 		state = final
 		motor.left.target = 0
