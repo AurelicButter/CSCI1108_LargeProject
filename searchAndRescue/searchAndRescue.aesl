@@ -21,7 +21,7 @@
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var state = STOPPED
 var firstScan[6] = [0, 0, 0, 0, 0, 0]
-var location[8] = [2, 2, 2, 2, 2, 2, 2, 2]
+var scanResult[6] = [2, 2, 2, 2, 2, 2]
 var dummy
 
 #Location Key Quad
@@ -36,8 +36,12 @@ var locations[32] = [
 	[0, 0, 1, 0]
 ]
 
+var possibles[5] = [10, 10, 10, 10, 10] #Tracks all possible spaces.
+
 var currLoc[4] = [2, 2, 2, 2] #2 is a placeholder null value.
 var i = 0
+var b = 0
+var c = 0
 var foundLoc = 10 #Sets to the square order thingy.
 
 onevent button.backward
@@ -65,6 +69,18 @@ sub scan
 	
 sub localize
 	callsub gScan
+	callsub wScan
+	
+	while b &lt; 8 do #Checks for the possible locations the robot can be in.
+		if firstScan[b] == scanResult[b] then
+			possibles[c] = b 
+			c += 1
+		end
+	end
+	
+	#Update variables for next cycle.
+	c = 0
+	i += 1	
 		
 sub gScan
 	if gTHRESHOLD > prox.ground.delta[0] then
@@ -72,7 +88,9 @@ sub gScan
 	else
 		currLoc[i] = 0
 	end
-	i += 1
+
+sub wScan
+	#Scans the wall.
 
 sub returnHome
 	#Turns around and goes home.
