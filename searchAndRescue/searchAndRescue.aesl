@@ -11,7 +11,10 @@
 <constant value="1" name="FORWARD"/>
 <constant value="2" name="BLOCK"/>
 <constant value="3" name="TURN"/>
+<constant value="4" name="HOME"/>
 <constant value="300" name="gTHRESHOLD"/>
+<constant value="0" name="wTHRESHOLD"/>
+<constant value="100" name="homeTHRESHOLD"/>
 
 
 <!--show keywords state-->
@@ -93,20 +96,49 @@ sub wScan
 	#Scans the wall.
 
 sub returnHome
-	#Turns around and goes home.
-	#Displays the location and the colour
+	state = HOME
+	callsub turn180
+	state = HOME #Resets the state
 	
-	#Senses no wall and turns an amount of degrees
-	state = FORWARD
-	motor.left.target = SPEED
-	motor.right.speed = SPEED
+	#See prox event for line detection for corners
 	
-	#Senses the center and stops
-	
-	callsub flashResults
+	timer.period[0] = 3000 #Stops after 3 seconds and flashes results
 	
 sub flashResults
-#Displays results.</node>
+#Displays results.
+
+sub turn180
+	state = TURN
+	motor.left.target = SPEED
+	motor.right.target = -SPEED
+	timer.period[0] = 1222
+	
+sub turn90
+	state = TURN
+	motor.left.target = SPEED
+	motor.right.target = -SPEED
+	timer.period[0] = 611
+	
+onevent timer0
+	if  state == HOME then
+		motor.left.target = 0
+		motor.right.target = 0
+		state = STOPPED
+		callsub flashResults
+	else
+		state = FORWARD
+		motor.left.target = SPEED
+		motor.right.target = SPEED
+	end
+	
+onevent prox
+	if  state == HOME then
+		if homeTHRESHOLD > prox.ground.delta[0] then
+			timer.period[0] = 4000 #Resets timer so that it remains accurate. (Travel time + turn time)
+			callsub turn90
+			state = HOME #Resets the state
+		end
+	end</node>
 
 
 </network>
