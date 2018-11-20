@@ -1,0 +1,17 @@
+#every time we sense something with the ground proximity sensors
+			#in case state not stopped and dark tape is sensored
+			if state!=stopped and prox.ground.delta[0] <= threshold then
+				
+				#and in case state is not straight1
+				if state != straight1 then
+					#then we assume that we are close to the final destination
+					count = 8
+					callsub action 
+				end
+				
+				#otherwise, if state is straight that means it is one of the lines (the left one)
+				if state == straight1 then
+					#then we need to turn which is impelemented in step 3 of the subroutine
+					count = 3
+					callsub action 
+				end	
