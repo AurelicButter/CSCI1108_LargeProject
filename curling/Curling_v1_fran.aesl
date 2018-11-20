@@ -16,7 +16,9 @@
 <constant value="4" name="straight2"/>
 <constant value="5" name="turn3"/>
 <constant value="6" name="wait"/>
-<constant value="7" name="final"/>
+<constant value="8" name="final"/>
+<constant value="7" name="hitgoal"/>
+<constant value="10" name="lost"/>
 
 
 <!--show keywords state-->
@@ -27,7 +29,7 @@
 <node nodeId="1" name="thymio-II">var count = 1
 var state
 var timer = 0
-
+var callsubplease = 0
 onevent button.forward
 	state = turn1
 	callsub action 
@@ -39,23 +41,13 @@ onevent button.backward
 	count = 0
 
 onevent prox
-			if state!=stopped 
-			and prox.ground.delta[0] &lt;= threshold 
-			then
-				if state != straight1 then
-					count = 8
-					callsub action 
-				end
-				if state == straight1 then
-					count = 3
-					callsub action 
-				end
-				#if last state and robot senses black ground 
-				if state == final then 
-					count = 8
-					callsub action 
-				end								
-end
+			# every time the robot senses something and the sub routine needs it, we call it
+			#piece of code needs to be added here 
+			# it is in the folder 
+			# why does it not work without it?!
+			if callsubplease == 1 then
+				callsub action							
+			end
 
 sub action
 	if count==1 then
@@ -64,44 +56,48 @@ sub action
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
-		state=straight1
-	end	
+	end
+	
+	#we implement a loop in which the robot goes straight forward until it reaches the black tape	
 	while count==2 do
-	#until finds black
 		state = straight1
-		timer = 1
-		#robot goes forward
 		motor.left.target = 300
 		motor.right.target = 300
-		#if he sees black line, count is set to 3
+		#exit condition: if the robot sees the black tape, count is set to 3
 		if prox.ground.delta[0] &lt;= threshold then
 			count = 3
+			callsubplease = 1
 		end
 	#implement that it goes back for 1 second before turning
 	end
 	if count==3 then
+		callsubplease = 0
 		state = turn1
 		timer.period[0]=800
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = -300
 	end
+	
 	if count==4 then
 		state= straight2
 	#straight2
-		timer.period[0]=14000
+		#it needs normally 15 seconds to cross the table but for tests it is set to 6 sec
+		timer.period[0]=6000
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = 300
 	end
+	
 	if count==5 then
 		state=turn3
 	#turn3
 		timer.period[0]= 1000
 		timer = 1
-		motor.left.target = -300
-		motor.right.target = 300
+		motor.left.target = 300
+		motor.right.target = -300
 	end
+	
 	if count==6 then
 		state = wait
 	#wait
@@ -109,24 +105,28 @@ sub action
 		timer = 1
 		motor.left.target = 0
 		motor.right.target = 0
+	end
 	
 	while count==7 do
-		state = final
-		timer.period[0] = 3000
+		state = hitgoal
 		timer = 1
+		#target speed is faster in case other robot gets hit (smashed)
 		motor.left.target = 400
 		motor.right.target = 400
 		if prox.ground.delta[0] &lt;= threshold then
 			count = 8
+			callsubplease = 1
 		end
 	end
 	
 	if count == 8 then
+		callsubplease = 0
+	#happens when we assume that we are close to final destination
+	#we stop and state equals final then
 		state = final
 		motor.left.target = 0
 		motor.right.target = 0
 	end
-end
 
 onevent timer0
 	if timer == 1 and state!=stopped then
