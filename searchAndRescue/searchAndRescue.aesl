@@ -15,6 +15,7 @@
 <constant value="300" name="gTHRESHOLD"/>
 <constant value="0" name="wTHRESHOLD"/>
 <constant value="100" name="homeTHRESHOLD"/>
+<constant value="150" name="lineTHRESHOLD"/>
 
 
 <!--show keywords state-->
@@ -23,15 +24,25 @@
 
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var state = STOPPED
-var firstScan[3] = [0, 0, 0]
-var scanResult[6] = [2, 2, 2, 2, 2, 2]
+var myColour[3] = [0, 0, 0] #Array of values for first scan
+var scanResult[3] = [2, 2, 2] #Last scan's results
 var dummy
+var foundColour = 0 #Turns 1 if found
 
 #LED Colours
-var RED[3] = [32, 0, 0]
-var GREEN[3] = [0, 32, 0]
-var BLUE[3] = [0, 0, 32]
-var WHITE[3] = [0, 0, 0]
+var LED[12] = [
+	[32, 0, 0], #RED
+	[0, 32, 0], #BLUE
+	[0, 0, 32], #GREEN
+	[0, 0, 0] #WHITE
+]
+
+var LEDCodes[12] = [
+	[0, 1, 0], #RED
+	[1, 1, 0], #GREEN
+	[1, 0, 1], #BLUE
+	[0, 0, 1] #WHITE
+] 
 
 #Location Key Quad
 var locations[32] = [
@@ -47,6 +58,7 @@ var locations[32] = [
 
 var currLoc[4] = [2, 2, 2, 2] #2 is a placeholder null value.
 var i = 0
+var squareLoop = 0 #The overall loop for the search and rescue.
 var SQUARE = 10 #For correct LED scan without location found.
 var currQUAD = 10 #Current square in case of more wScans
 
@@ -56,24 +68,45 @@ onevent button.backward
 	motor.right.target = 0
 	
 onevent button.right
-	if firstScan[0] == 0 then 
-		callsub scan
+	if myColour[0] == 0 then
+		callsub wScan
+		callsub colourFind
 	end
-	
-	callsub colourFind
 
 onevent button.forward
-	#Something
+	while  squareLoop &lt; 4 do
+		callsub localize		
+		callsub turn90
+		
+		motor.left.target = SPEED
+		motor.right.target = SPEED
+		state = FORWARD
+		
+		#Prox event that makes current loop state end for the next cycle.
+	end
 	
-sub scan
-	if firstScan[0] == 0 then
-		#Adds values to the firstScan array
-	else
-		#Scans and checks if it matches with the saved data.
-		if  dummy == firstScan[0] then
-			callsub returnHome
+	while foundColour &lt; 1 do
+		callsub wScan
+		
+		if currQUAD == 8 then
+			currQUAD = 1
+		else 
+			currQUAD++
+		end
+		
+		callsub colourFind
+		
+		if  foundColour == 0 then
+			callsub turn90
+			motor.left.target = SPEED
+			motor.right.target = SPEED
+			state = FORWARD
+		
+			#Prox event for next cycle.
 		end
 	end
+	
+	callsub returnHome
 	
 sub localize
 	callsub gScan
@@ -112,9 +145,6 @@ sub localize
 			end			
 		end
 	end
-	
-	#Update variables for next cycle.
-	i += 1	
 		
 sub gScan
 	if gTHRESHOLD > prox.ground.delta[0] then
@@ -134,6 +164,8 @@ sub returnHome
 	#See prox event for line detection for corners
 	
 	timer.period[0] = 3000 #Stops after 3 seconds and flashes results
+	motor.left.target = SPEED
+	motor.right.target = SPEED
 	
 sub flashResults
 #Displays results.
@@ -152,6 +184,10 @@ sub turn90
 	
 sub colourFind
 	#Determines what colour through a loop.
+	#call leds.top(0, 0, 0)
+	
+	#If finds right colour, set to 1 and set SQUARE to currQUAD
+	#Else do nothing.
 	
 onevent timer0
 	if  state == HOME then
@@ -171,6 +207,12 @@ onevent prox
 			timer.period[0] = 4000 #Resets timer so that it remains accurate. (Travel time + turn time)
 			callsub turn90
 			state = HOME #Resets the state
+		end
+	end
+	
+	if state == FORWARD then
+		if  lineTHRESHOLD > prox.ground.delta[0] then
+			squareLoop++
 		end
 	end</node>
 
