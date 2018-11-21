@@ -23,9 +23,15 @@
 
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var state = STOPPED
-var firstScan[6] = [0, 0, 0, 0, 0, 0]
+var firstScan[3] = [0, 0, 0]
 var scanResult[6] = [2, 2, 2, 2, 2, 2]
 var dummy
+
+#LED Colours
+var RED[3] = [32, 0, 0]
+var GREEN[3] = [0, 32, 0]
+var BLUE[3] = [0, 0, 32]
+var WHITE[3] = [0, 0, 0]
 
 #Location Key Quad
 var locations[32] = [
@@ -39,13 +45,10 @@ var locations[32] = [
 	[0, 0, 1, 0]
 ]
 
-var possibles[5] = [10, 10, 10, 10, 10] #Tracks all possible spaces.
-
 var currLoc[4] = [2, 2, 2, 2] #2 is a placeholder null value.
 var i = 0
-var b = 0
-var c = 0
-var foundLoc = 10 #Sets to the square order thingy.
+var SQUARE = 10 #For correct LED scan without location found.
+var currQUAD = 10 #Current square in case of more wScans
 
 onevent button.backward
 	state = STOPPED
@@ -56,6 +59,8 @@ onevent button.right
 	if firstScan[0] == 0 then 
 		callsub scan
 	end
+	
+	callsub colourFind
 
 onevent button.forward
 	#Something
@@ -74,15 +79,41 @@ sub localize
 	callsub gScan
 	callsub wScan
 	
-	while b &lt; 8 do #Checks for the possible locations the robot can be in.
-		if firstScan[b] == scanResult[b] then
-			possibles[c] = b 
-			c += 1
+	if  currLoc[3] &lt; 2 then
+		#I'm so sorry for what I'm about to do
+		#Enjoy my spaghetti code.
+		if  currLoc[0] == 0 then
+			if currLoc[1] == 1 then
+				if  currLoc[2] == 1 then
+					currQUAD = 5
+				else
+					currQUAD = 1
+				end
+			else
+				if  currLoc[2] == 1 then
+					if  currLoc[3] == 1 then
+						currQUAD = 4
+					else 
+						currQUAD = 8
+					end
+				else
+					currQUAD = 3
+				end
+			end
+		else
+			if  currLoc[1] == 1 then
+				currQUAD = 6
+			else
+				if currLoc[3] == 1 then
+					currQUAD = 7
+				else
+					currQUAD = 2
+				end
+			end			
 		end
 	end
 	
 	#Update variables for next cycle.
-	c = 0
 	i += 1	
 		
 sub gScan
@@ -118,6 +149,9 @@ sub turn90
 	motor.left.target = SPEED
 	motor.right.target = -SPEED
 	timer.period[0] = 611
+	
+sub colourFind
+	#Determines what colour through a loop.
 	
 onevent timer0
 	if  state == HOME then
