@@ -27,9 +27,10 @@
 
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var count = 1
-var state
+var state 
 var timer = 0
 var callsubplease = 0
+
 onevent button.forward
 	state = turn1
 	callsub action 
@@ -41,18 +42,25 @@ onevent button.backward
 	count = 0
 
 onevent prox
-			# every time the robot senses something and the sub routine needs it, we call it
+			# every time the robot senses something and the sub routine 		needs it, we call it
 			#piece of code needs to be added here 
 			# it is in the folder 
 			# why does it not work without it?!
-			if callsubplease == 1 then
-				callsub action							
+			
+			if  state != stopped and 						prox.ground.delta[0] &lt;= threshold 				and callsubplease == 0 then
+					count = 3
+					callsub action				
+			end 
+				
+			if state != stopped and 							prox.ground.delta[0] &lt;= threshold and 				callsubplease ==1 then
+					count = 8
+					callsub action
 			end
-
+				
 sub action
 	if count==1 then
 	#turn1
-		timer.period[0]=800
+		timer.period[0]=590
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
@@ -66,14 +74,13 @@ sub action
 		#exit condition: if the robot sees the black tape, count is set to 3
 		if prox.ground.delta[0] &lt;= threshold then
 			count = 3
-			callsubplease = 1
 		end
 	#implement that it goes back for 1 second before turning
 	end
 	if count==3 then
 		callsubplease = 0
 		state = turn1
-		timer.period[0]=800
+		timer.period[0]=300
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = -300
@@ -83,7 +90,7 @@ sub action
 		state= straight2
 	#straight2
 		#it needs normally 15 seconds to cross the table but for tests it is set to 6 sec
-		timer.period[0]=6000
+		timer.period[0]=10000
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = 300
@@ -101,7 +108,7 @@ sub action
 	if count==6 then
 		state = wait
 	#wait
-		timer.period[0] = 20000
+		timer.period[0] = 7000
 		timer = 1
 		motor.left.target = 0
 		motor.right.target = 0
@@ -113,9 +120,9 @@ sub action
 		#target speed is faster in case other robot gets hit (smashed)
 		motor.left.target = 400
 		motor.right.target = 400
+		callsubplease = 1
 		if prox.ground.delta[0] &lt;= threshold then
 			count = 8
-			callsubplease = 1
 		end
 	end
 	
@@ -123,7 +130,7 @@ sub action
 		callsubplease = 0
 	#happens when we assume that we are close to final destination
 	#we stop and state equals final then
-		state = final
+		state = stopped
 		motor.left.target = 0
 		motor.right.target = 0
 	end
