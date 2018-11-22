@@ -19,6 +19,8 @@
 <constant value="8" name="final"/>
 <constant value="7" name="hitgoal"/>
 <constant value="10" name="lost"/>
+<constant value="700" name="thresholdgrey"/>
+<constant value="8" name="lastsecond"/>
 
 
 <!--show keywords state-->
@@ -56,11 +58,15 @@ onevent prox
 					count = 8
 					callsub action
 			end
+			if state != stopped and 							prox.ground.delta[0] &lt;= threshold and 				callsubplease ==2 then
+					
+					callsub action
+			end
 				
 sub action
 	if count==1 then
 	#turn1
-		timer.period[0]=590
+		timer.period[0]=600
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
@@ -127,12 +133,20 @@ sub action
 	end
 	
 	if count == 8 then
-		callsubplease = 0
+		callsubplease = 2
+		timer.period[0] = 800
+		timer = 1
 	#happens when we assume that we are close to final destination
 	#we stop and state equals final then
+		state = lastsecond
+		motor.left.target = 400
+		motor.right.target = 400
+	end
+	if count==9 then
 		state = stopped
 		motor.left.target = 0
 		motor.right.target = 0
+		
 	end
 
 onevent timer0
