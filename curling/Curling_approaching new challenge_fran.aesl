@@ -1,0 +1,188 @@
+<!DOCTYPE aesl-source>
+<network>
+
+
+<!--list of global events-->
+
+
+<!--list of constants-->
+<constant value="1" name="turn1"/>
+<constant value="0" name="stopped"/>
+<constant value="300" name="target"/>
+<constant value="300" name="threshold"/>
+<constant value="300" name="colour"/>
+<constant value="2" name="straight1"/>
+<constant value="3" name="turn2"/>
+<constant value="4" name="straight2"/>
+<constant value="5" name="turn3"/>
+<constant value="6" name="wait"/>
+<constant value="8" name="final"/>
+<constant value="7" name="hitgoal"/>
+<constant value="10" name="lost"/>
+<constant value="700" name="thresholdgrey"/>
+<constant value="8" name="lastsecond"/>
+<constant value="10" name="backwards"/>
+
+
+<!--show keywords state-->
+<keywords flag="true"/>
+
+
+<!--node thymio-II-->
+<node nodeId="1" name="thymio-II">var count = -1
+var state 
+var timer = 0
+var callsubplease = 0
+
+onevent button.forward
+	state = turn1
+	callsub action 
+	
+onevent button.backward
+	state = stopped
+	motor.right.target = 0 
+	motor.left.target = 0
+	count = 0
+
+onevent prox
+			# every time the robot senses something and the sub routine 		needs it, we call it
+			
+			if  state != stopped and 						prox.ground.delta[0] &lt;= threshold 				and callsubplease == 0 then
+					count = 2
+					callsub action				
+			end 
+				
+			if state != stopped and 							prox.ground.delta[0] &lt;= threshold and 				callsubplease ==1 then
+					count = 8
+					callsub action
+			end
+			if state != stopped and 							prox.ground.delta[0] &lt;= threshold and 				callsubplease ==2 then
+					
+					callsub action
+			end
+			
+			if state != stopped and prox.ground.delta[0] &lt;= thresholdgrey  and prox.ground.delta[1] &lt;= thresholdgrey	then
+					
+					callsub action
+			end
+			
+				
+sub action
+	if  count==-1 then
+		timer.period[0]=3000
+		timer = 1
+		motor.left.target = 0
+		motor.right.target = 0
+		
+	end
+	if count==0 then
+	#turn1
+		timer.period[0]=780
+		timer = 1
+		motor.left.target = -300
+		motor.right.target = 300
+	end
+	
+	#we implement a loop in which the robot goes straight forward until it reaches the black tape	
+	while count==1 do
+		state = straight1
+		motor.left.target = 300
+		motor.right.target = 300
+		#exit condition: if the robot sees the black tape, count is set to 3
+		if prox.ground.delta[0] &lt;= threshold then
+			count = 2
+		end
+	#implement that it goes back for 1 second before turning
+	end
+	
+	if  count==2 then
+	#robot goes backwards for a bit
+		callsubplease = 0
+		state = backwards
+		timer.period[0]=200
+		timer = 1
+		motor.left.target = -300
+		motor.right.target = -300	
+	end
+	if count==3 then
+		state = turn1
+		timer.period[0]=620
+		timer = 1
+		motor.left.target = 300
+		motor.right.target = -300
+	end
+	
+	if count==4 then
+		state= straight2
+	#straight2
+		timer.period[0]=13000
+		timer = 1
+		motor.left.target = 300
+		motor.right.target = 300
+	end
+	
+	if count==5 then
+		state=turn3
+	#turn3
+		timer.period[0]= 1000
+		timer = 1
+		motor.left.target = 300
+		motor.right.target = -300
+	end
+	
+	if count==6 then
+		state = wait
+	#wait
+		timer.period[0] = 32500
+		timer = 1
+		motor.left.target = 0
+		motor.right.target = 0
+	end
+	
+	while count==7 do
+		state = hitgoal
+		timer = 1
+		#target speed is faster in case other robot gets hit (smashed)
+		motor.left.target = 400
+		motor.right.target = 400
+		callsubplease = 1
+		
+		#if both sensors hit the grey area with BOTH sensors
+		if prox.ground.delta[0] &lt;= thresholdgrey 
+		and prox.ground.delta[1] &lt;= thresholdgrey then
+			#program shall continue normally
+			count = 8
+		end
+		
+		
+	end
+	
+	if count == 8 then
+		callsubplease = 2
+		timer.period[0] = 500
+		timer = 1
+	#happens when we assume that we are close to final destination
+	#we stop and state equals final then
+		state = lastsecond
+		motor.left.target = 500
+		motor.right.target = 500
+	end
+	
+	if count==9 then
+		state = stopped
+		motor.left.target = 0
+		motor.right.target = 0
+		
+	end
+
+onevent timer0
+	if timer == 1 and state!=stopped then
+		count=count+1
+		motor.left.target = 0
+		motor.right.target = 0
+		timer = 0
+		callsub action
+	end</node>
+
+
+</network>

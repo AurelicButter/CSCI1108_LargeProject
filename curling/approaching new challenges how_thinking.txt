@@ -1,0 +1,38 @@
+How to make sure that we end up in the black dot? 
+
+possibility 1: 
+- we miss the complete circle
+
+how do we notice? 
+- After a certain amount of time we have not sensed black yet 
+
+How could we catch that in the code? 
+- so we set a timer for 6 seconds or something like that 
+- then we let the robot go whatever direction is more likely to have missed it 
+- let it go the way back 
+- correct course 
+-let it go forward again 
+
+possibility 2: 
+- we only hit the grey
+how do we notice? 
+we hit gray for a longer time 
+
+How could we catch that in the code? 
+- set timer for how long we go over black 
+--> ok if only very short and BOTH sensors must sense it
+- and after it needs to be white again (however it would also be white if we missed it)
+--> if it hit too long (then going back and correct course )or only one sensor hit it (then going back and correcting the course in the direction of this sensor)
+
+
+possibility 3: 
+- we only hit grey and white
+how do we notice? 
+we hit grey, then white (which is right until there)
+but: then gray again 
+
+How could we catch that in the code? 
+
+
+ 
+
