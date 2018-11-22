@@ -15,7 +15,7 @@
 <constant value="300" name="gTHRESHOLD"/>
 <constant value="0" name="wTHRESHOLD"/>
 <constant value="100" name="homeTHRESHOLD"/>
-<constant value="150" name="lineTHRESHOLD"/>
+<constant value="400" name="lineTHRESHOLD"/>
 
 
 <!--show keywords state-->
@@ -26,15 +26,14 @@
 <node nodeId="1" name="thymio-II">var state = STOPPED
 var myColour[3] = [0, 0, 0] #Array of values for first scan
 var scanResult[3] = [2, 2, 2] #Last scan's results
-var dummy
 var foundColour = 0 #Turns 1 if found
 
 #LED Colours
 var LED[12] = [
 	[32, 0, 0], #RED
-	[0, 32, 0], #BLUE
-	[0, 0, 32], #GREEN
-	[0, 0, 0] #WHITE
+	[0, 0, 32], #BLUE
+	[0, 128, 0], #GREEN
+	[32, 32, 32] #WHITE
 ]
 
 var LEDCodes[12] = [
@@ -57,10 +56,14 @@ var locations[32] = [
 ]
 
 var currLoc[4] = [2, 2, 2, 2] #2 is a placeholder null value.
-var i = 0
+var i = 0 #For ground scanning
+var w = 0 #For wall scanning
+var a = 1 #Value for LED lights
 var squareLoop = 0 #The overall loop for the search and rescue.
 var SQUARE = 10 #For correct LED scan without location found.
 var currQUAD = 10 #Current square in case of more wScans
+
+#LED Circles for top LED position display
 
 onevent button.backward
 	state = STOPPED
@@ -74,39 +77,41 @@ onevent button.right
 	end
 
 onevent button.forward
-	while  squareLoop &lt; 4 do
-		callsub localize		
-		callsub turn90
-		
-		motor.left.target = SPEED
-		motor.right.target = SPEED
-		state = FORWARD
-		
-		#Prox event that makes current loop state end for the next cycle.
-	end
-	
-	while foundColour &lt; 1 do
-		callsub wScan
-		
-		if currQUAD == 8 then
-			currQUAD = 1
-		else 
-			currQUAD++
-		end
-		
-		callsub colourFind
-		
-		if  foundColour == 0 then
+	if state != HOME then
+		for squareLoop in 0:3 do
+			callsub localize		
 			callsub turn90
+		
 			motor.left.target = SPEED
 			motor.right.target = SPEED
 			state = FORWARD
-		
-			#Prox event for next cycle.
-		end
-	end
 	
-	callsub returnHome
+			#Prox event that makes current loop state end for the next cycle.
+		end
+	
+		while foundColour &lt; 1 do
+			callsub wScan
+		
+			if currQUAD == 7 then
+				currQUAD = 0
+			else 
+				currQUAD++
+			end
+		
+			callsub colourFind
+		
+			if  foundColour == 0 then
+				callsub turn90
+				motor.left.target = SPEED
+				motor.right.target = SPEED
+				state = FORWARD
+		
+				#Prox event for next cycle.
+			end
+		end
+	
+		callsub returnHome
+	end
 	
 sub localize
 	callsub gScan
@@ -118,43 +123,53 @@ sub localize
 		if  currLoc[0] == 0 then
 			if currLoc[1] == 1 then
 				if  currLoc[2] == 1 then
-					currQUAD = 5
+					currQUAD = 4
 				else
-					currQUAD = 1
+					currQUAD = 0
 				end
 			else
 				if  currLoc[2] == 1 then
 					if  currLoc[3] == 1 then
-						currQUAD = 4
+						currQUAD = 3
 					else 
-						currQUAD = 8
+						currQUAD = 7
 					end
 				else
-					currQUAD = 3
+					currQUAD = 2
 				end
 			end
 		else
 			if  currLoc[1] == 1 then
-				currQUAD = 6
+				currQUAD = 5
 			else
 				if currLoc[3] == 1 then
-					currQUAD = 7
+					currQUAD = 6
 				else
-					currQUAD = 2
+					currQUAD = 1
 				end
 			end			
 		end
 	end
 		
 sub gScan
-	if gTHRESHOLD > prox.ground.delta[0] then
-		currLoc[i] = 1
-	else
-		currLoc[i] = 0
+	if currLoc[3] == 2 then
+		if gTHRESHOLD > prox.ground.delta[0] then
+			currLoc[i] = 1
+		else
+			currLoc[i] = 0
+		end
+	
+		i++
 	end
 
 sub wScan
-	#Scans the wall.
+	for w in 0:2 do
+		if  wTHRESHOLD > prox.horizontal[2] then
+			scanResult[w] = 1
+		else 
+			scanResult[w] = 0
+		end
+	end
 
 sub returnHome
 	state = HOME
@@ -169,6 +184,7 @@ sub returnHome
 	
 sub flashResults
 #Displays results.
+	call leds.top(LED[3*a], LED[3*a + 1], LED[3*a + 2]) #Displays the colour
 
 sub turn180
 	state = TURN
@@ -183,6 +199,10 @@ sub turn90
 	timer.period[0] = 611
 	
 sub colourFind
+	if myColour[0] == scanResult[0] then
+		SQUARE = currQUAD
+		foundColour = 1
+	end
 	#Determines what colour through a loop.
 	#call leds.top(0, 0, 0)
 	
@@ -210,8 +230,8 @@ onevent prox
 		end
 	end
 	
-	if state == FORWARD then
-		if  lineTHRESHOLD > prox.ground.delta[0] then
+	if lineTHRESHOLD > prox.horizontal[3] then
+		if state == FORWARD then
 			squareLoop++
 		end
 	end</node>
