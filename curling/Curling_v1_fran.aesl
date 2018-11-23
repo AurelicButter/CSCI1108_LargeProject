@@ -29,7 +29,7 @@
 
 
 <!--node thymio-II-->
-<node nodeId="1" name="thymio-II">var count = -1
+<node nodeId="1" name="thymio-II">var count = -2
 var state 
 var timer = 0
 var callsubplease = 0
@@ -70,6 +70,7 @@ onevent prox
 			end
 				
 sub action
+	#timers to let the LEDs light up after approx. 60sec (taking into account that robot is not accurate)
 	if counttime == 1 then
 		timer.period[1]=30000
 		timer2 = 1
@@ -83,12 +84,18 @@ sub action
 		call leds.circle(32,32,32,32,32,32,32,32)
 	end
 	
-	if  count==-1 then
+	if  count==-2 then
 		timer.period[0]=3000
 		timer = 1
 		motor.left.target = 0
 		motor.right.target = 0
 		
+	end
+	if  count==-1 then
+		timer.period[0]=900
+		timer = 1
+		motor.left.target = 300
+		motor.right.target = 300
 	end
 	if count==0 then
 	#turn1
@@ -148,7 +155,7 @@ sub action
 	if count==6 then
 		state = wait
 	#wait
-		timer.period[0] = 32500
+		timer.period[0] = 31000
 		timer = 1
 		motor.left.target = 0
 		motor.right.target = 0
@@ -168,7 +175,7 @@ sub action
 	
 	if count == 8 then
 		callsubplease = 2
-		timer.period[0] = 700
+		timer.period[0] = 800
 		timer = 1
 	#happens when we assume that we are close to final destination
 	#we stop and state equals final then
