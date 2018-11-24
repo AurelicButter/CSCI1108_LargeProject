@@ -22,15 +22,15 @@
 
 <!--node thymio-II-->
 <node nodeId="1" name="thymio-II">var state = STOPPED
-var myColour[3] = [0, 0, 0] #Array of values for first scan
+var myColour[3] = [2, 2, 2] #Array of values for first scan
 var scanResult[3] = [2, 2, 2] #Last scan's results
 var foundColour = 0 #Turns 1 if found
 
 #LED Colours
 var LED[12] = [
 	[32, 0, 0], #RED
-	[0, 0, 32], #BLUE
 	[0, 128, 0], #GREEN
+	[0, 0, 32], #BLUE
 	[32, 32, 32] #WHITE
 ]
 
@@ -73,28 +73,33 @@ var SQUARE = 6 #For correct LED scan without location found.
 var currQUAD = 10 #Current square in case of more wScans
 
 onevent button.backward
-	state = HOME
+	state = STOPPED
 	motor.left.target = 0
 	motor.right.target = 0
 	
 onevent button.right
-	if myColour[0] == 0 then
+	if myColour[0] == 2 then
 		callsub wScan
 		myColour = scanResult
 		
 		callsub colourLocal
 		
 		call leds.top(LED[3*a], LED[3*a + 1], LED[3*a + 2]) #Displays the colour
-		
-		call leds.top(0, 0, 0) #Resets the colour display
-		a = 0 #Resets the a value.
 	end
 	
-#onevent button.left
+onevent button.left
 	#Button for debugging
+	#Resets all values.
+	
+	call leds.top(0, 0, 0) #Resets the colour display
+	a = 0 #Resets the a value.
+	state = STOPPED
 
 onevent button.forward
-	if state != HOME then
+	if state != HOME and state != STOPPED then
+		call leds.top(0, 0, 0) #Resets the colour display
+		a = 0 #Resets the a value.
+		
 		for squareLoop in 0:3 do
 			callsub localize		
 			callsub turn90
@@ -234,7 +239,7 @@ sub colourFind
 sub colourLocal
 	if scanResult[0] == 0 then
 		if  scanResult[1] == 0 then
-			a = 4
+			a = 3
 		else
 			a = 0
 		end
