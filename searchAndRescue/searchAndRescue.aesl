@@ -10,10 +10,12 @@
 <constant value="0" name="STOPPED"/>
 <constant value="1" name="FORWARD"/>
 <constant value="2" name="BLOCK"/>
-<constant value="4" name="HOME"/>
+<constant value="3" name="HOME"/>
+<constant value="4" name="READY"/>
 <constant value="300" name="gTHRESHOLD"/>
 <constant value="3000" name="wTHRESHOLD"/>
 <constant value="400" name="lineTHRESHOLD"/>
+<constant value="2000" name="wallTHRESHOLD"/>
 
 
 <!--show keywords state-->
@@ -70,7 +72,7 @@ var w = 0 #For wall scanning
 var a = 0 #Value for LED lights
 var squareLoop = 0 #The overall loop for the search and rescue.
 var SQUARE = 6 #For correct LED scan without location found.
-var currQUAD = 10 #Current square in case of more wScans
+var currQUAD = -4 #Current square the robot is in.
 
 onevent button.backward
 	state = STOPPED
@@ -85,14 +87,22 @@ onevent button.right
 		callsub colourLocal
 		
 		call leds.top(LED[3*a], LED[3*a + 1], LED[3*a + 2]) #Displays the colour
+		
+		state = READY
 	end
 	
 onevent button.left
 	#Button for debugging
 	#Resets all values.
 	
-	call leds.top(0, 0, 0) #Resets the colour display
-	a = 0 #Resets the a value.
+	call leds.top(0, 0, 0)
+	a = 0
+	myColour = [2, 2, 2]
+	scanResult = [2, 2, 2]
+	foundColour = 0
+	i = 0
+	w = 0
+	currQUAD = -4
 	state = STOPPED
 
 onevent button.forward
@@ -142,8 +152,6 @@ sub localize
 		else
 			currLoc[i] = 0
 		end
-	
-		i++
 	end
 	
 	callsub wScan
@@ -181,6 +189,10 @@ sub localize
 			end			
 		end
 	end
+	
+	i++
+	
+	callsub colourFind
 
 sub wScan
 	if wTHRESHOLD > prox.horizontal[1] then
@@ -202,8 +214,7 @@ sub wScan
 	end
 
 sub returnHome
-	state = HOME
-	
+	state = HOME	
 	motor.left.target = -SPEED
 	motor.right.target = SPEED
 	
@@ -268,8 +279,31 @@ onevent timer0
 		motor.right.target = SPEED
 	end
 	
-onevent prox	
+onevent prox
+	if  state == FORWARD then
+		while prox.horizontal[0] &lt; wallTHRESHOLD and prox.horizontal[5] &lt; wallTHRESHOLD do
+			if lineTHRESHOLD > prox.ground.delta[0] then
+				motor.left.target = -SPEED
+			elseif lineTHRESHOLD > prox.ground.delta[1] then
+				motor.right.target = -SPEED
+			else
+				motor.left.target = SPEED
+				motor.right.target = SPEED
+			end
+		end
+		
+		if  foundColour == 1 then
+			SQUARE++
+		end
+		
+		squareLoop++
+	end
+
 	if lineTHRESHOLD > prox.horizontal[3] and state == FORWARD then
+		if foundColour == 1 then
+			SQUARE++
+		end
+		
 		squareLoop++
 	end</node>
 
