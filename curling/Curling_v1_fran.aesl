@@ -99,7 +99,7 @@ sub action
 	end
 	if count==0 then
 	#turn1
-		timer.period[0]=780
+		timer.period[0]=750
 		timer = 1
 		motor.left.target = -300
 		motor.right.target = 300
@@ -128,7 +128,7 @@ sub action
 	end
 	if count==3 then
 		state = turn1
-		timer.period[0]=620
+		timer.period[0]=680
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = -300
@@ -137,7 +137,7 @@ sub action
 	if count==4 then
 		state= straight2
 	#straight2
-		timer.period[0]=13000
+		timer.period[0]=14200
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = 300
@@ -146,7 +146,7 @@ sub action
 	if count==5 then
 		state=turn3
 	#turn3
-		timer.period[0]= 1000
+		timer.period[0]= 970
 		timer = 1
 		motor.left.target = 300
 		motor.right.target = -300
@@ -155,7 +155,7 @@ sub action
 	if count==6 then
 		state = wait
 	#wait
-		timer.period[0] = 31000
+		timer.period[0] = 30500
 		timer = 1
 		motor.left.target = 0
 		motor.right.target = 0
