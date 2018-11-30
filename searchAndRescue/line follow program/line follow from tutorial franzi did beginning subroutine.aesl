@@ -1,0 +1,112 @@
+<!DOCTYPE aesl-source>
+<network>
+
+
+<!--list of global events-->
+
+
+<!--list of constants-->
+<constant value="0" name="STOPPED"/>
+<constant value="1" name="LEFT"/>
+<constant value="300" name="THRESHOLD"/>
+<constant value="2" name="RIGHT"/>
+<constant value="200" name="TARGET"/>
+
+
+<!--show keywords state-->
+<keywords flag="true"/>
+
+
+<!--node thymio-II-->
+<node nodeId="1" name="thymio-II">var state = STOPPED # variable declarations
+
+#variables for subroutine general 
+var count = 0
+var timer = 0
+var linefollowmode = 0
+
+onevent button.forward # on forward button press
+state = LEFT # transition to LEFT state
+motor.left.target = TARGET
+motor.right.target = TARGET
+
+onevent button.backward # on backward button press
+state = STOPPED # transition to STOPPED state
+motor.left.target = 0 # stop motors
+motor.right.target = 0
+
+# on prox event
+onevent prox 
+	
+	# if robot is moving and linefollowmode is turnt on
+	if (state != STOPPED and linefollowmode == 1) then 
+		
+		# if moving left and not sensing black line
+		if state == LEFT and prox.ground.delta[0] >= THRESHOLD then
+			state = RIGHT # transition to RIGHT state
+			motor.left.target = TARGET # move right
+			motor.right.target = 120
+		end
+		
+		# if moving right and sensing black line
+		if state == RIGHT and prox.ground.delta[0] &lt; THRESHOLD then
+			state = LEFT # transition to LEFT state
+			motor.left.target = 120 # move left
+			motor.right.target = TARGET
+		end
+end
+
+sub general 
+	#Beginn
+	while  count==0 do
+		#go forward until hit wall 
+		
+		#if senses wall in front
+		if prox.horizontal[1]&lt;=THRESHOLD then
+			count = 1
+		end
+		
+	#going backwards a bit after hitting the wall first time
+	if  count == 1 then
+		timer.period[0]= 200
+		timer = 1
+		motor.left.target = -TARGET
+		motor.right.target = -TARGET
+	end
+	
+	#first turn after hitting the wall first time
+	if  count == 2 then
+		#turn to the right (we go counterwise)
+		timer.period[0]=680
+		timer = 1
+		motor.left.target = TARGET
+		motor.right.target = -TARGET
+		
+		
+	end
+	
+	#robot goes forward, the wall should be parallel to him on the left side
+	#until it hits the line
+	while  count == 3 do
+		
+		motor.left.target = TARGET
+		motor.right.target = TARGET
+		if prox.ground.delta[0] &lt;= THRESHOLD then
+			count = 4
+		end
+	end
+	
+	
+end
+	
+onevent timer0
+	if  timer == 1 and state != STOPPED then
+		count = count + 1 
+		motor.left.target = 0
+		motor.right.target = 0
+		timer = 0
+		callsub general
+	end</node>
+
+
+</network>
