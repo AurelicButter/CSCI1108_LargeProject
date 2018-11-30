@@ -8,9 +8,11 @@
 <!--list of constants-->
 <constant value="0" name="STOPPED"/>
 <constant value="1" name="LEFT"/>
-<constant value="300" name="THRESHOLD"/>
+<constant value="200" name="THRESHOLD"/>
 <constant value="2" name="RIGHT"/>
 <constant value="200" name="TARGET"/>
+<constant value="3" name="LOCALIZE"/>
+<constant value="2000" name="HORIZTHRESHOLD"/>
 
 
 <!--show keywords state-->
@@ -18,17 +20,25 @@
 
 
 <!--node thymio-II-->
-<node nodeId="1" name="thymio-II">var state = STOPPED # variable declarations
+<node nodeId="1" name="thymio-II"># variable declarations
+#variables general 
+var state
 
 #variables for subroutine general 
 var count = 0
 var timer = 0
 var linefollowmode = 0
+var test = 0
+
 
 onevent button.forward # on forward button press
-state = LEFT # transition to LEFT state
-motor.left.target = TARGET
-motor.right.target = TARGET
+# transition to LEFT state
+state = LOCALIZE 
+count = 0
+timer = 0
+#call subroutine general 
+callsub general
+
 
 onevent button.backward # on backward button press
 state = STOPPED # transition to STOPPED state
@@ -39,94 +49,115 @@ motor.right.target = 0
 onevent prox 
 	
 	# if robot is moving and linefollowmode is turnt on
-	if (state != STOPPED and linefollowmode == 1) then 
-		
-		# if moving left and not sensing black line
-		if state == LEFT and prox.ground.delta[0] >= THRESHOLD then
-			state = RIGHT # transition to RIGHT state
-			motor.left.target = TARGET # move right
-			motor.right.target = 120
-		end
-		
-		# if moving right and sensing black line
-		if state == RIGHT and prox.ground.delta[0] &lt; THRESHOLD then
-			state = LEFT # transition to LEFT state
-			motor.left.target = 120 # move left
-			motor.right.target = TARGET
-		end
-end
-
-sub general 
-	#Beginn
-	while  count==0 do
-		#go forward until hit wall 
-		
-		#if senses wall in front
-		#however needs to be done again in the onevent prox.ground
-		if prox.horizontal[1]&lt;=THRESHOLD then
+	if (state != STOPPED and linefollowmode != 0) then 
+			# Tutorial Code
+			# if moving left and not sensing black line
+			if state == LEFT and prox.ground.delta[0] >= THRESHOLD then
+				state = RIGHT # transition to RIGHT state
+				motor.left.target = TARGET # move right
+				motor.right.target = 120
+			end
+			
+			# if moving right and sensing black line
+			if state == RIGHT and prox.ground.delta[0] &lt; THRESHOLD then
+				state = LEFT # transition to LEFT state
+				motor.left.target = 120 # move left
+				motor.right.target = TARGET
+			end		
+	end
+	
+	# if state is localize 
+	if  state == LOCALIZE then
+		if prox.horizontal[0] >= HORIZTHRESHOLD and count == 0 then
 			count = 1
 			callsub general
 		end
 		
-	#going backwards a bit after hitting the wall first time
-	if  count == 1 then
-		timer.period[0]= 200
-		timer = 1
-		motor.left.target = -TARGET
-		motor.right.target = -TARGET
-	end
-	
-	#first turn after hitting the wall first time
-	if  count == 2 then
-		#turn to the right (we go counterwise)
-		timer.period[0]=680
-		timer = 1
-		motor.left.target = TARGET
-		motor.right.target = -TARGET
-		
-		
-	end
-	
-	#robot goes forward, the wall should be parallel to him on the left side
-	#until it hits the line
-	while  count == 3 do
-		
-		motor.left.target = TARGET
-		motor.right.target = TARGET
-		#however this must be programmed also in oneevent prox.ground etc
-		if prox.ground.delta[0] &lt;= THRESHOLD then
+		if prox.ground.delta[0] &lt;= THRESHOLD and count == 3 then
 			count = 4
 			callsub general
 		end
 	end
 	
-	#robot hit the line
+
+
+sub general 
+	#Beginn
+	while  count==0 do
+		state = LOCALIZE
+		#go forward until hit wall 
+		motor.left.target = TARGET
+		motor.right.target = TARGET
+		#if senses wall in front
+		#however needs to be done again in the onevent prox.ground
+		if prox.horizontal[0]>=HORIZTHRESHOLD then
+			count = 1
+		end
+	end
+		
+	#going backwards a bit after hitting the wall first time
+	if  count == 1 then
+		state = LOCALIZE
+		timer.period[0]= 300
+		timer = 1
+		motor.left.target = -TARGET
+		motor.right.target = -TARGET
+	end
+	
+	#first turn after hitting the wall first 	time
+	if  count == 2 then
+		#turn to the right (we go counterwise)
+		timer.period[0]=2000
+		timer = 1
+		motor.left.target = TARGET
+		motor.right.target = -TARGET
+	end
+	
+	#robot goes forward, the wall should be parallel to him on the left side
+	#until it hits the line
+	while  count == 3 do
+		#go forward until you hit the black line
+		motor.left.target = TARGET
+		motor.right.target = TARGET
+		linefollowmode = 0
+		#however this must be programmed also in oneevent prox.ground etc
+		#when it hits black line
+		if prox.ground.delta[0] &lt;= THRESHOLD then
+			count = 4
+		end
+	
+	end
+	
+	#THIS KINDA WORKS
+	#robot hit the line now it shall turn
 	if  count == 4 then
 		#turn to the left 
-		timer.period[0]= 700
+		timer.period[0]= 1200
 		timer = 1
 		#try and error in which angle it needs to turn 
-		motor.left.target = -50
+		motor.left.target = -TARGET
 		motor.right.target = TARGET
 	end
 	
-	#linefollow 
 	
-	
-	
-	
-	
-	
-end
+	#THIS WORKS 
+	#linefollow mode 
+	if  count == 5 then
+		#state is changed from LOCALIZE to LEFT
+		state = LEFT
+		#linefollowmode is turnt 1, now robot will react on sensing the black line
+		linefollowmode = 1
+	end		
+
 	
 onevent timer0
-	if  timer == 1 and state != STOPPED then
-		count = count + 1 
-		motor.left.target = 0
-		motor.right.target = 0
+	if  timer == 1 then
+		count=count+1 
 		timer = 0
 		callsub general
-	end</node>
+	end
+		
+</node>
 
 
 </network>
