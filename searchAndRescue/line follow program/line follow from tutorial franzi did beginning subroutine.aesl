@@ -62,8 +62,10 @@ sub general
 		#go forward until hit wall 
 		
 		#if senses wall in front
+		#however needs to be done again in the onevent prox.ground
 		if prox.horizontal[1]&lt;=THRESHOLD then
 			count = 1
+			callsub general
 		end
 		
 	#going backwards a bit after hitting the wall first time
@@ -91,10 +93,28 @@ sub general
 		
 		motor.left.target = TARGET
 		motor.right.target = TARGET
+		#however this must be programmed also in oneevent prox.ground etc
 		if prox.ground.delta[0] &lt;= THRESHOLD then
 			count = 4
+			callsub general
 		end
 	end
+	
+	#robot hit the line
+	if  count == 4 then
+		#turn to the left 
+		timer.period[0]= 700
+		timer = 1
+		#try and error in which angle it needs to turn 
+		motor.left.target = -50
+		motor.right.target = TARGET
+	end
+	
+	#linefollow 
+	
+	
+	
+	
 	
 	
 end
